@@ -9,11 +9,11 @@ devtools::install_github("JiekaiLab/SOT")
 ```
 Some other packages are required to be installed before running the tutorial.
 ```R
-# CRAN - install.packages(pkg.names)
+# CRAN
 dplyr
 tidyr
 
-# Bioconductor - BiocManager::install(pkg.names)
+# Bioconductor
 destiny
 ReactomePA
 clusterProfiler
