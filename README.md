@@ -7,6 +7,17 @@ To install development version from GitHub, use the __devtools__ package
 install.packages("devtools")
 devtools::install_github("JiekaiLab/SOT")
 ```
+Some other packages are required to be installed before running the tutorial.
+```R
+# CRAN
+dplyr
+tidyr
+
+# Bioconductor
+destiny
+ReactomePA
+clusterProfiler
+```
 
 # Tutorial
 The [tutorial]() shows the analysis of reprogramming data described in _Resolving Cell Fate Decisions during Somatic Cell Reprogramming by Single-Cell RNA-seq_, __Molecular Cell__.
