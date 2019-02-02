@@ -1,8 +1,7 @@
 # What is sctools?
 Single cell orientation tracing (SOT) is analysis framework for single cell RNAseq data. SOT searches co-expreesed gene groups which represent abstract biological functions. The gene groups can be used to discover cell types and reconstruct developmental process. <br>
-The tutorial
 
-# How to install SOT?
+# Install package
 To install development version from GitHub, use the __devtools__ package,
 ```R
 install.packages("devtools")
