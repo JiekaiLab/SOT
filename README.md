@@ -1,5 +1,5 @@
 # What is SOT?
-Single cell orientation tracing (SOT) is analysis framework for single cell RNA-seq data. SOT searches co-expreesed gene groups which represent abstract biological functions. The gene groups can be used to discover cell types and reconstruct developmental trajectory. <br>
+Single cell orientation tracing (SOT) is analysis framework for single cell RNA-seq data. SOT searches co-expreesed gene groups that represent abstract biological functions. The gene groups can be used to discover cell types and reconstruct developmental trajectory. <br>
 
 # Workflow
 ![workflow](./README_files/workflow.png)
