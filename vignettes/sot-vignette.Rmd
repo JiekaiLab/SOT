@@ -1,0 +1,254 @@
+---
+title: "SOT vignette"
+date: "`r Sys.Date()`"
+author:
+- name: Lihui Lin
+  affiliation: Guangzhou Institute of Biomedicine and Health
+  email: lin_lihui@gibh.ac.cn
+package: packageName 0.1.1
+output:
+  BiocStyle::html_document
+abstract: |
+  Single cell orientation tracing (SOT) is analysis framework for single cell RNA-seq data. SOT searches co-expreesed gene groups that represent abstract biological functions. The gene groups can be used to discover cell types and reconstruct developmental trajectory. 
+vignette: |
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+```
+
+# Introduction {.unnumbered}
+
+Single cell orientation tracing (SOT) is an analysis framework for single cell RNAseq data. SOT discovers cellular heterogeneity based on the core biological functions embedding in low dimensions. SOT contains several steps: <br>
+1. Gene filter; <br>
+2. Grouping co-expressed genes; <br>
+3. Low-dimensional representation of cellular heterogeneity. <br>
+
+# Load required packages {.unnumbered}
+
+```{r load package, message=FALSE}
+library(SOT)
+library(DT)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(SingleCellExperiment)
+library(clusterProfiler)
+library(ReactomePA)
+library(destiny)
+```
+
+# Load data {.unnumbered}
+
+We load C1-OSK data for illustration. The data contains 912 cells of reprogramming. In brief, The mouse embryonic fibroblasts (MEF) were induced to pluripotent cells (iPSC) by overexpressing Oct4, Sox2 and Klf4. We use Fluidigm C1 to capture single cells from 11 time points or cell lines, including MEF (initial cells), D0-D8 (inducing cells), iPSC (terminal cells) and ESC (pluripotent cells). <br>
+
+The input data should be normlized elsewhere. The `SCnorm`, `scran` are recommended for dataset with less cells. For large dataset, `Seurat` or `pagoda2` are more efficient.
+
+```{r data shape, warning=FALSE}
+file_dir = system.file("extdata", "c1_osk.csv.gz", package = "SOT")
+exprs = read.csv(file_dir, row.names = 1,check.names = FALSE)
+```
+
+The expression profile contains genes in row and cells in columns.
+
+```{r}
+exprs[1:5,1:5]
+```
+
+```{r}
+dim(exprs)
+```
+
+The data manipulation of SOT is based on  [SingleCellExperiment](https://bioconductor.org/packages/release/bioc/html/SingleCellExperiment.html) object, which provides an easy way to store gene expression profiles, cell annotation, gene annotation, dimension reduction, metadata and etc. 
+
+```{r}
+sce = SingleCellExperiment(assays = list(normcounts=as.matrix(exprs)))
+```
+
+Annotate days.
+
+```{r annotation}
+day = c("mef", "osk_d0", "osk_d1", "osk_d2", "osk_d3", "osk_d4", "osk_d5", "osk_d7", "osk_d8", "ips", "esc")
+sce$Day = factor(gsub(paste0("(",paste(day,collapse = "|"),").*"), "\\1", colnames(sce)),levels=day)
+metadata(sce)$`Day color` = c("mef" = "#BEAED4",
+                              "osk_d0" = "#fdac86",
+                              "osk_d1" = "#FFFF99",
+                              "osk_d2" = "#386CB0",
+                              "osk_d3" = "#F0027F",
+                              "osk_d5" = "#BF5B17",
+                              "osk_d7" = "#666666",
+                              "osk_d8" = "#ffd56f",
+                              "ips" = "#7FBC41",
+                              "esc" = "#A6CEE3")
+```
+
+We can browser the information stored in sce object.
+
+```{r browser sce}
+sce
+```
+
+# Gene filter
+
+## Filter low expression gene 
+
+The filtering results can be accessed in `rowData(sce)$"filter.low"`. 
+
+```{r filter low}
+sce = FilterLow(sce, minexp = 10, mincells = 10, datatype = "normcounts")
+assay(sce, "logcounts") = log2(scde::winsorize.matrix(assay(sce, "normcounts"), trim = 5.1/ncol(sce)) + 1)
+```
+
+## Find high variable genes
+
+The high variable genes can be accessed by `rowData(sce)$find.hvgs`. 
+
+```{r find hvg}
+sce = FindHVGs(sce, datatype = "logcounts", thr.bio = 0, thr.FDR = 0.1)
+sum(rowData(sce)$genes.use)
+```
+
+## Perform distribution test
+
+Some genes with similar distribution across multiple time points reflect stable biological processes (eg. housekeeping genes), which have little information for dissecting heterogeneity of intermediate state of reprogramming. Therefore, we test if gene expression is drawn from a population that follows a particular distribution using Anderson-Darling test, the genes with adjusted pvalue less then 1e-3 are excluded. <br>
+The genes with different distribution can be accessed by `rowData(sce)$"ad.test"`.
+
+```{r adtest}
+sce = ADtest(sce, 
+             datatype = "logcounts",
+             condition = "Day", 
+             useLevels = c("osk_d1","osk_d2","osk_d3","osk_d5","osk_d7","osk_d8"), 
+             ncore = 4,
+             adj.method = "BH",
+             thr.padj = 1e-3)
+```
+
+# Grouping co-expressed genes
+
+SOT uses affinity propagation (AP) clustering to find co-expressed gene groups. The advantage of AP clustering is that it can determined the number of clusters automatically. SOT scores each cluster across cell by calculate the first principle component, which provides a denoised view of the data. The cluster scores are stored in `reducedDim(sce, "lv1.score")`.
+
+```{r round1 ap}
+sce = ap.cluster(sce, datatype = "logcounts", genes.use = "genes.use", trim = 5.1/ncol(sce), center = T, scale. = T, ncore = 3)
+```
+
+We can see the gene number. The symbols are the exemplars of each cluster. <br>
+
+```{r,fig.width=10,fig.height=4}
+metadata(sce)$p.cluster.size
+```
+
+Heatmap of lv1.score.
+
+```{r,fig.width=6,fig.height=6}
+plot_embed(sce, usedEmbed = "lv1.score", anno_col = "Day", color_scale = metadata(sce)$`Day color`, fontsize=5)
+```
+
+The gene clusters are too many and it's hard to interpret their biological functions since some clusters only contain few genes. To get a more concise view of the cellular heterogeneity, SOT performs AP clustering again on the eigengenes of gene clusters and assigns genes into several larger gene groups.
+
+```{r}
+sce = reduce.cluster(sce)
+```
+
+Similarly, the score of each gene group is represented by the first principle component. The group scores are stored in `reducedDim(sce, "lv2.score")`. The lv2.score is normalized by remove mean and standard deviation.
+
+```{r}
+metadata(sce)$p.group.size
+```
+
+Heatmap of lv2.score.
+
+```{r,fig.width=7,fig.height=4}
+plot_embed(sce, usedEmbed = "lv2.score", anno_col = "Day", cluster_row = FALSE, color_scale = metadata(sce)$`Day color`, fontsize=8)
+```
+
+It is interesting to research the pathway of gene groups. It helps us understand the source of reprogramming heterogeneity. Here we perform GO enrichment.
+
+```{r, message = FALSE}
+gene_anno = rowData(sce)
+gene_anno = gene_anno[gene_anno$genes.use, ]
+grlabs = split(gene_anno$symbol, gene_anno$lv2.labels)
+gcSample = lapply(grlabs, function(gr) as.numeric(bitr(gr, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = "org.Mm.eg.db")$ENTREZID))
+xx.mus.go <- compareCluster(gcSample, OrgDb='org.Mm.eg.db', fun='enrichGO', pvalueCutoff = 0.1, qvalueCutoff = 0.1, ont = "BP", readable=T)
+EnrichResGO = xx.mus.go@compareClusterResult
+```
+```{r,fig.width=12,fig.height=10}
+dotplot(xx.mus.go, title = paste0("Mouse Gene Ontology"))
+```
+
+```{r go table}
+datatable(EnrichResGO, filter="top", options=list(pageLength = 10)) 
+```
+
+We can assess divergence of each gene group in each day. 
+
+```{r}
+lv2.score = as.data.frame(reducedDim(sce, "lv2.score"))
+group.std = lv2.score %>% 
+  cbind(Day = sce$Day) %>%
+  group_by(Day) %>% 
+  summarise_all(funs(sd)) %>%
+  gather(Group, Std, -Day)
+
+ggplot(data=group.std, aes(x=Day, y=Std, group=Group)) +
+  geom_line(aes(color=Group))+
+  geom_point() + facet_wrap(~Group) + theme_bw() + 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 10)) + 
+  labs(title = "Divergence of gene groups in each day")
+```
+
+The group divergence reflects the heterogenous contribution of each gene group for each day. For example, group1 (annotated for keratinization) has low standard deviation (std) in MEF, iPS and ESC, but has high std in the intermediate stage, suggesting a divergent cell state emerged during reprogramming. The group7 has low std across all time points indicate a synchronistical biological process. <br>
+
+# Low-dimensional representation of cellular heterogeneity
+
+Previouse [study](https://www.nature.com/articles/nbt.3102) had reported that cell cycle effect could mask the true developmental process when analyzing single-cell RNA-seq data. Notably, after performming co-expression analysis, we find that the group2 enriched for cell cycle, which may blur the dissection of successed and failed reprogramming branches. So we exclude group2 and then perform [diffusion map](https://academic.oup.com/bioinformatics/article/31/18/2989/241305). Diffusion map is dimensional reduction algorithm that discovers continuous manifold structure by constructing Markovian transition of cells.
+
+```{r diffusion map, fig.width=5, fig.height=5}
+dm = DiffusionMap(reducedDim(sce, "lv2.score")[,-c(2)])
+plot(eigenvalues(dm), ylim = c(0.7,1), pch = 20,main="Scree plot", xlab = "Diffusion component (DC)", ylab = "Eigenvalue")
+```
+
+The top diffusion components are selected and stored in `reducedDim(sce)` namely "dcs".
+
+```{r}
+top_dcs = dm[[paste0("DC", 1:7)]]
+reducedDim(sce, "dcs") = top_dcs
+```
+
+SOT integrates some methods for visualizing high dimensional data in 2-d, e.g. FR (Fruchterman-Reingold layout), largeVis, umap(Uniform Manifold Approximation and Projection). <br>
+
+Once the specific type of 2-d layout was computed, it will not be computed again when `usedEmbed` contains one of FR, largeVis and umap in the string. To force re-calculating the layout, one should remove the coordinate in `reducedDims(sce)`, for example, `reducedDim(sce, "dcs_FR")=NULL`. 
+
+```{r}
+sce = layout_2d(sce, k = 35, seed = 10, usedEmbed = "dcs", colour_condition = "Day", color_scale = metadata(sce)$`Day color`)
+```
+
+The layout function returns sce with ggplot2 object in `metadata(sce)`.
+
+```{r day}
+metadata(sce)$p.dcs_FR.Day
+```
+
+We can see distinct branches of reprogramming. Gene group scores can be showed in the layout which help us examine the biological pathways in different stage or branch of reprogramming. 
+
+```{r lv2 score}
+sce = layout_2d(sce, usedEmbed = "dcs_FR", colour_embed = "lv2.score")
+```
+
+```{r, fig.width=8,fig.height=6}
+metadata(sce)$p.dcs_FR.lv2.score
+```
+
+We can also see the expression of marker genes.
+
+```{r gene group}
+genes = c("Dppa5a", "Nanog", "Sall4", "Klk10", "Fxyd5", "Cd34","Gbp2", "Gbp5", "Ifng")
+sce = layout_2d(sce, datatype = "logcounts", usedEmbed = "dcs_FR", colour_gene = genes)
+```
+
+```{r,fig.width=8,fig.height=6}
+metadata(sce)$p.dcs_FR.gene
+```
+
