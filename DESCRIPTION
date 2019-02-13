@@ -28,6 +28,7 @@ Imports:
     pheatmap,
     RColorBrewer,
     reticulate,
+    S4Vectors,
     scran,
     SingleCellExperiment,
     SummarizedExperiment,
