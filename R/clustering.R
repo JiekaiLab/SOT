@@ -140,10 +140,11 @@ ap.cluster <- function(sce,
                          cluster_size = gene_num[used_cls])
   
   # Plot cluster size
-  df <- ap_stats[order(ap_stats$cluster_size),]
+  df <- ap_stats
+  # df <- ap_stats[order(ap_stats$cluster_size),]
   df$color <- as.factor(rep(c(1,2),(nrow(df)+1)/2)[1:nrow(df)])
   p <- ggplot(data=df, aes(x=factor(cluster_gene, levels = df$cluster_gene), y=cluster_size, fill=color)) +
-        geom_bar(stat="identity",width = 0.8) + scale_fill_manual(values=c('#999999','#E69F00'))+
+        geom_bar(stat="identity",width = 0.8) + scale_fill_manual(values=c("#a3c4dc","#0e668b"))+
         labs(title = "Cluster size", x = "Cluster exemplars", y = "Gene number") +
         theme_bw() + theme(axis.text.x = element_text(angle = 60, hjust = 1, size=6), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position="none") 
   metadata(sce)$p.cluster.size <- p
@@ -310,12 +311,13 @@ reduce.cluster <- function(sce,
   ap_stats$group_size <- gr_num[ap_stats$group]
   
   # Plot group size
-  df <- ap_stats[order(ap_stats$group_size),]
+  df <- ap_stats
+  # df <- ap_stats[order(ap_stats$group_size),]
   df <- df[!duplicated(df$group),]
   df$color <- as.factor(rep(c(1,2),(nrow(df)+1)/2)[1:nrow(df)])
   p <- ggplot(data=df, 
               aes(x=factor(group, levels = df$group), y=group_size, fill=color)) +
-    geom_bar(stat="identity",width = 0.8) + scale_fill_manual(values=c('#999999','#E69F00'))+
+    geom_bar(stat="identity",width = 0.8) + scale_fill_manual(values=c("#a3c4dc","#0e668b"))+
     labs(title = "Group size", x = "Group", y = "Gene number") +
     theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1, size = 10), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position="none") 
   metadata(sce)$p.group.size <- p
