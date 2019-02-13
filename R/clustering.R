@@ -311,15 +311,14 @@ reduce.cluster <- function(sce,
   ap_stats$group_size <- gr_num[ap_stats$group]
   
   # Plot group size
-  df <- ap_stats
-  # df <- ap_stats[order(ap_stats$group_size),]
+  df <- ap_stats[order(ap_stats$group),]
   df <- df[!duplicated(df$group),]
   df$color <- as.factor(rep(c(1,2),(nrow(df)+1)/2)[1:nrow(df)])
   p <- ggplot(data=df, 
               aes(x=factor(group, levels = df$group), y=group_size, fill=color)) +
     geom_bar(stat="identity",width = 0.8) + scale_fill_manual(values=c("#a3c4dc","#0e668b"))+
     labs(title = "Group size", x = "Group", y = "Gene number") +
-    theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1, size = 10), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position="none") 
+    theme_bw() + theme(axis.text.x = element_text(size = 10), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position="none") 
   metadata(sce)$p.group.size <- p
   message("Use metadata(sce)$p.group.size to visualize group size.")
   
