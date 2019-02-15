@@ -24,7 +24,6 @@ Imports:
     kSamples,
     Matrix,
     parallel,
-    pcaL1,
     pheatmap,
     RColorBrewer,
     reticulate,
