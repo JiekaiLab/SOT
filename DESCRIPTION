@@ -9,7 +9,7 @@ LazyData: true
 ByteCompile: true
 RoxygenNote: 6.1.0
 Imports:
-    apcluster,
+apcluster,
     doParallel,
     dlm,
     dplyr,
