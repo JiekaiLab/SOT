@@ -9,7 +9,7 @@ LazyData: true
 ByteCompile: true
 RoxygenNote: 6.1.0
 Imports:apcluster,doParallel,dlm,dplyr,FNN,foreach,fastcluster,ggplot2,ggpubr,graphics,grDevices,igraph,kSamples,Matrix,parallel,pheatmap,RColorBrewer,reticulate,S4Vectors,scran,SingleCellExperiment,SummarizedExperiment,stats,utils
-Suggests: 
+Suggests:
     knitr,
     rmarkdown,
     Rtsne,
