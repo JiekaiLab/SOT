@@ -40,19 +40,16 @@ FilterLow = function(sce, datatype = NULL, minexp = 10, mincells = 5){
 #' @importFrom kSamples ad.test
 #' @importFrom parallel makeCluster
 #' @importFrom stats p.adjust
-#' @importFrom reticulate source_python
+#' @importFrom reticulate import
 #' @importFrom S4Vectors metadata
 #' @import doParallel
 #' @import foreach
 #' @import dplyr
 #' @param sce SingleCellExperiment object.
-#' @param datatype Sepcify the data type in sce for filtering.
 #' @param condition Conditions corresponding to cells.
 #' @param useLevels Subset conditions for test - default is NULL.
-#' @param genes.use A logical vector in rowData to specify the genes for calculation.
-#' @param sample.cells Sampling cell number in each condition to speed up testing.
 #' @param adj.method p-value correction method. See \code{\link[stats]{p.adjust}} for more detail.
-#' @param r.implement Whether to use R implement of AD test. If FALSE, I will use anderson_ksamp function in scipy.
+#' @param datatype Sepcify the data type in sce for filtering.
 #' @param ncore Number of cores used for parallel. 
 #' @return Adjusted p-value of Anderson-Darling test.
 #' @export
@@ -61,10 +58,8 @@ ADtest <- function(sce,
                    condition, 
                    useLevels = NULL,
                    genes.use = "find.hvgs",
-                   sample.cells = 500,
                    adj.method = "BH",
                    thr.padj = 1e-3,
-                   r.implement = FALSE,
                    ncore = 6){
   if (class(sce) != "SingleCellExperiment"){
       stop("sce must be a sce object")
@@ -78,7 +73,7 @@ ADtest <- function(sce,
     stop("cond must be in colData")
   }
   else{
-    cond = as.vector(colData(sce)[, condition])
+    cond = colData(sce)[, condition] 
   }
   if (!is.null(useLevels)){
     if (!all(useLevels %in% cond)){
@@ -86,7 +81,7 @@ ADtest <- function(sce,
     }
   }
   else{
-    useLevels <- unique(as.vector(cond))
+    useLevels <- unique(cond)
   }
   if (!is.null(genes.use)){
     if (!genes.use %in% colnames(rowData(sce))){
@@ -101,29 +96,20 @@ ADtest <- function(sce,
     rowData(sce) <- cbind(data.frame(symbol=rownames(sce)), as.data.frame(rowData(sce)))
   }
   lv <- cond[cond %in% useLevels]
-
-  # Sampling cells to speed up testing
-  cells.use <- colnames(sce)[cond %in% useLevels]
-  names(lv) <- cells.use
-
-  if (!is.null(sample.cells)){
-    set.seed(1)
-    cells.use <- do.call(c, lapply(useLevels, function(i) {sample(cells.use[lv == i], min(sum(lv == i), sample.cells))}))
-    lv <- lv[cells.use]
-  }
-  
-  vi <- apply(assay(sce[, cells.use], datatype), 1, function(x) sum(abs(diff(x))) >0 )
+  vi <- apply(assay(sce[, cond %in% useLevels], datatype), 1, function(x) sum(abs(diff(x))) >0 )
   genes.use <- genes.use & vi
-  message("Perform Aderson-Darling test for ", length(cells.use), " cells of <", paste(useLevels, collapse = " "),">")
+  # sub_sce <- sce[vi, ]
+  
+  message("Perform Aderson-Darling test for <", paste(useLevels, collapse = " "),">")
   if (ncore == 1){
     message("Use 1 core to perform Anderson-Darling test...")
     if (!py_module_available(module = "scipy")) {
-      pv = apply(assay(sce[genes.use, cells.use], datatype), 1, function(y) ad.test(y ~ as.character(lv))$ad[1,3]) # p-value of asymptotic method
+      pv = apply(assay(sce[genes.use, cond %in% useLevels], datatype), 1, function(y) ad.test(y ~ as.character(lv))$ad[1,3]) # p-value of asymptotic method
     }else{
       # The scipy application is much faster
       message("*Use python implement of anderson_ksamp*")
       scipy <- import(module = "scipy", delay_load = TRUE)
-      pv <- apply(assay(sce[genes.use, cells.use], datatype), 1, function(y) {
+      pv <- apply(assay(sce[genes.use, cond %in% useLevels], datatype), 1, function(y) {
         l <- split(as.numeric(y), as.character(lv))
         names(l) <- NULL
         scipy$stats$anderson_ksamp(l)$significance_level
@@ -134,26 +120,19 @@ ADtest <- function(sce,
     message("Use ", ncore ," cores to perform Anderson-Darling test...")
     cl = makeCluster(ncore)
     registerDoParallel(cl)
-    if (r.implement) {
+    if (!py_module_available(module = "scipy")) {
       pv <- unlist(foreach(i = 1:sum(genes.use), .packages=c("kSamples", "SummarizedExperiment")) %dopar% {
-        ad.test(as.numeric(assay(sce[genes.use, cells.use][i, ], datatype)) ~ as.character(lv))$ad[1,3] # p-value of asymptotic method
+        ad.test(as.numeric(assay(sce[genes.use, ][i, cond %in% useLevels], datatype)) ~ as.character(lv))$ad[1,3] # p-value of asymptotic method
       })
       
     }else{
-      if (py_module_available(module = "scipy")){
-        message("*Use python implement of anderson_ksamp*")
-        idx <- 1:sum(genes.use)
-        block <- as.numeric(cut(idx, breaks = ncore))
-        pv <- unlist(foreach(i = 1:ncore, .packages=c("reticulate", "SummarizedExperiment"), .combine=c) %dopar% {
-          source_python(system.file("py_script", "adtest.py", package = "SOT"))
-          py_adtest(assay(sce[genes.use, cells.use][block == i, ], datatype), as.character(lv))
-          # l <- split(as.numeric(assay(sce[genes.use, cells.use][i, ], datatype)), as.character(lv))
-          # names(l) <- NULL
-          # scipy$stats$anderson_ksamp(l)$significance_level
-        })
-      }else{
-        stop("Python package scipy is not available.")
-      }
+      message("*Use python implement of anderson_ksamp*")
+      pv <- unlist(foreach(i = 1:sum(genes.use), .packages=c("reticulate", "SummarizedExperiment")) %dopar% {
+        scipy <- import(module = "scipy", delay_load = TRUE)
+        l <- split(as.numeric(assay(sce[genes.use, ][i, cond %in% useLevels], datatype)), as.character(lv))
+        names(l) <- NULL
+        scipy$stats$anderson_ksamp(l)$significance_level
+      })
     }
     stopCluster(cl)
   }
