@@ -3,7 +3,6 @@
 #' AP clustering on genes and calculate the eigengenes of each cluster
 #' @importFrom apcluster apcluster
 #' @importFrom stats cor prcomp
-#' @importFrom pcaL1 wl1pca
 #' @importFrom parallel makeCluster stopCluster
 #' @importFrom S4Vectors metadata
 #' @import doParallel
@@ -112,14 +111,14 @@ ap.cluster <- function(sce,
   else if (projections == "l1"){
     if (ncore == 1){
       message("Perform wPCA and calculate eigengenes...")
-      pc1s <- do.call(cbind, lapply(cls, function(cl) as.vector(wl1pca(t(as.matrix(mat[as.character(cl$symbol),])), projDim=1, center=FALSE, projections=projections)$scores)))
+      pc1s <- do.call(cbind, lapply(cls, function(cl) as.vector(pcaL1::wl1pca(t(as.matrix(mat[as.character(cl$symbol),])), projDim=1, center=FALSE, projections=projections)$scores)))
     }
     else{
       message("Perform wPCA using ", ncore, " cores...")
       cl <- makeCluster(ncore)
       registerDoParallel(cl)
       pc1s <- foreach(i = 1:length(cls), .packages=c("pcaL1"), .combine=cbind) %dopar% {
-        as.vector(wl1pca(t(as.matrix(mat[as.character(cls[[i]]$symbol),])), projDim=1, center=FALSE, projections=projections)$scores)
+        as.vector(pcaL1::wl1pca(t(as.matrix(mat[as.character(cls[[i]]$symbol),])), projDim=1, center=FALSE, projections=projections)$scores)
       }
       stopCluster(cl)
     }
@@ -168,7 +167,6 @@ ap.cluster <- function(sce,
 #' Merge highly related clusters into groups
 #' @importFrom apcluster apcluster
 #' @importFrom stats cor prcomp
-#' @importFrom pcaL1 wl1pca
 #' @importFrom parallel makeCluster stopCluster
 #' @importFrom S4Vectors metadata
 #' @import doParallel
@@ -286,14 +284,14 @@ reduce.cluster <- function(sce,
   else if (projections == "l1"){
     if (ncore == 1){
       message("Perform wPCA and calculate eigengenes...")
-      pc1s <- do.call(cbind, lapply(grl, function(gr) as.vector(wl1pca(t(as.matrix(mat[as.character(gr$symbol),])), projDim=1, center=FALSE, projections=projections)$scores)))
+      pc1s <- do.call(cbind, lapply(grl, function(gr) as.vector(pcaL1::wl1pca(t(as.matrix(mat[as.character(gr$symbol),])), projDim=1, center=FALSE, projections=projections)$scores)))
     }
     else{
       message("Perform wPCA using ", ncore, " cores...")
       cl <- makeCluster(ncore)
       registerDoParallel(cl)
       pc1s <- foreach(i = 1:length(grl), .packages=c("pcaL1"), .combine=cbind) %dopar% {
-        as.vector(wl1pca(t(as.matrix(amat[as.character(grl[[i]]$symbol),])), projDim=1, center=FALSE, projections=projections)$scores)
+        as.vector(pcaL1::wl1pca(t(as.matrix(amat[as.character(grl[[i]]$symbol),])), projDim=1, center=FALSE, projections=projections)$scores)
       }
       stopCluster(cl)
     }
