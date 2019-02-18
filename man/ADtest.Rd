@@ -5,8 +5,8 @@
 \title{Aderson-Darling test}
 \usage{
 ADtest(sce, datatype = "logcounts", condition, useLevels = NULL,
-  genes.use = "find.hvgs", adj.method = "BH", thr.padj = 0.001,
-  ncore = 6)
+  genes.use = "find.hvgs", sample.cells = 1000, adj.method = "none",
+  thr.padj = 0.001, r.implement = FALSE, ncore = 2)
 }
 \arguments{
 \item{sce}{SingleCellExperiment object.}
@@ -17,7 +17,13 @@ ADtest(sce, datatype = "logcounts", condition, useLevels = NULL,
 
 \item{useLevels}{Subset conditions for test - default is NULL.}
 
+\item{genes.use}{A logical vector in rowData to specify the genes for calculation.}
+
+\item{sample.cells}{Sampling cell number in each condition to speed up testing.}
+
 \item{adj.method}{p-value correction method. See \code{\link[stats]{p.adjust}} for more detail.}
+
+\item{r.implement}{Whether to use R implement of AD test. If FALSE, I will use anderson_ksamp function in scipy.}
 
 \item{ncore}{Number of cores used for parallel.}
 }

@@ -19,9 +19,9 @@
 #' @param filename Filename to save - default is NULL.
 #' @param k k nearest neighbors to construct graph.
 #' @param n_trees Number of trees for largeVis.
-#' @param max_iter max_iter for largeVis. see \code{\link[SOT]{randomProjectionTreeSearch}}
+#' @param max_iter max_iter for largeVis. see \code{\link[largeVis]{randomProjectionTreeSearch}}
 #' @param seed Random seed.
-#' @param layout_method Graph layout method of FR (Fruchterman-Reingold layout) or FA2 (ForceAtlas2).
+#' @param layout_method Graph layout method, can be one of FR, largeVis or umap.
 #' @param grid Character scalar, whether to use the faster, but less accurate grid based implementation of the algorithm. By default (“auto”), the grid-based implementation is used if the graph has more than one thousand vertices.
 #' @param iterations Iterations number of iterations to be performed.
 #' @param clus_method Clustering method besed on graph.

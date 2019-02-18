@@ -109,6 +109,11 @@ ap.cluster <- function(sce,
   }
   ## L1 PCA ##
   else if (projections == "l1"){
+    x <- "pcaL1"
+    if (!require(x,character.only = TRUE)){
+      install.packages(x,dep=TRUE)
+      if(!require(x,character.only = TRUE)) stop(paste0("Cannot install ", x))
+    }
     if (ncore == 1){
       message("Perform wPCA and calculate eigengenes...")
       pc1s <- do.call(cbind, lapply(cls, function(cl) as.vector(pcaL1::wl1pca(t(as.matrix(mat[as.character(cl$symbol),])), projDim=1, center=FALSE, projections=projections)$scores)))
@@ -282,6 +287,11 @@ reduce.cluster <- function(sce,
   }
   ## L1 PCA ##
   else if (projections == "l1"){
+    x <- "pcaL1"
+    if (!require(x,character.only = TRUE)){
+      install.packages(x,dep=TRUE)
+      if(!require(x,character.only = TRUE)) stop(paste0("Cannot install ", x))
+    }
     if (ncore == 1){
       message("Perform wPCA and calculate eigengenes...")
       pc1s <- do.call(cbind, lapply(grl, function(gr) as.vector(pcaL1::wl1pca(t(as.matrix(mat[as.character(gr$symbol),])), projDim=1, center=FALSE, projections=projections)$scores)))

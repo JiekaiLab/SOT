@@ -29,11 +29,11 @@ layout_2d(sce, usedEmbed = "PCA", usedDims = NULL, datatype = NULL,
 
 \item{n_trees}{Number of trees for largeVis.}
 
-\item{max_iter}{max_iter for largeVis. see \code{\link[SOT]{randomProjectionTreeSearch}}}
+\item{max_iter}{max_iter for largeVis. see \code{\link[largeVis]{randomProjectionTreeSearch}}}
 
 \item{seed}{Random seed.}
 
-\item{layout_method}{Graph layout method of FR (Fruchterman-Reingold layout) or FA2 (ForceAtlas2).}
+\item{layout_method}{Graph layout method, can be one of FR, largeVis or umap.}
 
 \item{grid}{Character scalar, whether to use the faster, but less accurate grid based implementation of the algorithm. By default (“auto”), the grid-based implementation is used if the graph has more than one thousand vertices.}
 
