@@ -61,11 +61,11 @@ ADtest <- function(sce,
                    condition, 
                    useLevels = NULL,
                    genes.use = "find.hvgs",
-                   sample.cells = 500,
-                   adj.method = "BH",
+                   sample.cells = 1000,
+                   adj.method = "none",
                    thr.padj = 1e-3,
                    r.implement = FALSE,
-                   ncore = 6){
+                   ncore = 2){
   if (class(sce) != "SingleCellExperiment"){
       stop("sce must be a sce object")
   }
@@ -164,8 +164,12 @@ ADtest <- function(sce,
   rowData(sce)$`adtest.padj` <- adtest.padj
   metadata(sce)$`AD test condistions` <- useLevels
   
-  sig.genes <- adtest.padj[adtest.padj < thr.padj]
-  sig.genes <- sig.genes[!is.na(sig.genes)]
+  # sig.genes <- adtest.padj[adtest.padj < thr.padj]
+  # sig.genes <- sig.genes[!is.na(sig.genes)]
+  # ad.mask <- rownames(sce) %in% names(sig.genes)
+  
+  adtest.padj <- adtest.padj[!is.na(adtest.padj)]
+  sig.genes <- adtest.padj[adtest.padj <= thr.padj]
   ad.mask <- rownames(sce) %in% names(sig.genes)
   
   rowData(sce)[, "ad.test"] <- ad.mask
