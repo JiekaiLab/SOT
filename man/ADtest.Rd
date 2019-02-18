@@ -5,8 +5,8 @@
 \title{Aderson-Darling test}
 \usage{
 ADtest(sce, datatype = "logcounts", condition, useLevels = NULL,
-  genes.use = "find.hvgs", sample.cells = 500, adj.method = "BH",
-  thr.padj = 0.001, r.implement = FALSE, ncore = 6)
+  genes.use = "find.hvgs", sample.cells = 1000, adj.method = "none",
+  thr.padj = 0.001, r.implement = FALSE, ncore = 2)
 }
 \arguments{
 \item{sce}{SingleCellExperiment object.}
