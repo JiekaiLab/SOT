@@ -115,21 +115,26 @@ ADtest <- function(sce,
   vi <- apply(assay(sce[, cells.use], datatype), 1, function(x) sum(abs(diff(x))) >0 )
   genes.use <- genes.use & vi
   message("Perform Aderson-Darling test for ", length(cells.use), " cells of <", paste(useLevels, collapse = " "),">")
+              
   if (ncore == 1){
     message("Use 1 core to perform Anderson-Darling test...")
-    if (!py_module_available(module = "scipy")) {
+    if (r.implement){
       pv = apply(assay(sce[genes.use, cells.use], datatype), 1, function(y) ad.test(y ~ as.character(lv))$ad[1,3]) # p-value of asymptotic method
     }else{
-      # The scipy application is much faster
-      message("*Use python implement of anderson_ksamp*")
-      scipy <- import(module = "scipy", delay_load = TRUE)
-      pv <- apply(assay(sce[genes.use, cells.use], datatype), 1, function(y) {
-        l <- split(as.numeric(y), as.character(lv))
-        names(l) <- NULL
-        scipy$stats$anderson_ksamp(l)$significance_level
-      })
+      if (py_module_available(module = "scipy")){
+        # The scipy application is much faster
+        message("*Use python implement of anderson_ksamp*")
+        scipy <- import(module = "scipy", delay_load = TRUE)
+        pv <- apply(assay(sce[genes.use, cells.use], datatype), 1, function(y) {
+          l <- split(as.numeric(y), as.character(lv))
+          names(l) <- NULL
+          scipy$stats$anderson_ksamp(l)$significance_level
+        })
+      }else{
+        stop("Python package scipy is not available.")
       }
-  }
+    }
+  }               
   else{
     message("Use ", ncore ," cores to perform Anderson-Darling test...")
     cl = makeCluster(ncore)
@@ -147,9 +152,6 @@ ADtest <- function(sce,
         pv <- unlist(foreach(i = 1:ncore, .packages=c("reticulate", "SummarizedExperiment"), .combine=c) %dopar% {
           source_python(system.file("py_script", "adtest.py", package = "SOT"))
           py_adtest(assay(sce[genes.use, cells.use][block == i, ], datatype), as.character(lv))
-          # l <- split(as.numeric(assay(sce[genes.use, cells.use][i, ], datatype)), as.character(lv))
-          # names(l) <- NULL
-          # scipy$stats$anderson_ksamp(l)$significance_level
         })
       }else{
         stop("Python package scipy is not available.")
@@ -163,11 +165,7 @@ ADtest <- function(sce,
     
   rowData(sce)$`adtest.padj` <- adtest.padj
   metadata(sce)$`AD test condistions` <- useLevels
-  
-  # sig.genes <- adtest.padj[adtest.padj < thr.padj]
-  # sig.genes <- sig.genes[!is.na(sig.genes)]
-  # ad.mask <- rownames(sce) %in% names(sig.genes)
-  
+
   adtest.padj <- adtest.padj[!is.na(adtest.padj)]
   sig.genes <- adtest.padj[adtest.padj <= thr.padj]
   ad.mask <- rownames(sce) %in% names(sig.genes)
