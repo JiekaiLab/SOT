@@ -1,7 +1,56 @@
+#' Build SingleCellExperiment object.
+#' 
+#' Build SingleCellExperiment object.
+#' @importFrom SingleCellExperiment SingleCellExperiment
+#' @importFrom Matrix Matrix
+#' @importFrom scde winsorize.matrix
+#' @param counts Matrix like or data.frame object of counts with genes by cells. 
+#' @param normcounts Analogous to counts.
+#' @param logcounts Analogous to counts.
+#' @param cpm Analogous to counts.
+#' @param tpm Analogous to counts.
+#' @param scaleData Analogous to counts.
+#' @param trim Fraction of outlier values (on each side) to be trimmed on each side.
+#' @param sparse logical or NULL, specifying if the result should be sparse or not. 
+#' @param ... Additional arguments passed on to \code{\link[SingleCellExperiment]{SingleCellExperiment}}.
+#' @export
+BuildSCE <- function(counts=NULL,
+                     normcounts=NULL, 
+                     logcounts=NULL, 
+                     cpm=NULL, 
+                     tpm=NULL, 
+                     scaleData=NULL, 
+                     trim=0.1,
+                     sparse=TRUE,
+                     ...){
+  assays <- list()
+  if (!is.null(counts)){
+    assays[["counts"]] <- Matrix(winsorize.matrix(as.matrix(counts),trim=trim), sparse = sparse)
+  }
+  if (!is.null(normcounts)){
+    assays[["normcounts"]] <- Matrix(winsorize.matrix(as.matrix(normcounts),trim=trim), sparse = sparse)
+  }
+  if (!is.null(logcounts)){
+    assays[["logcounts"]] <- Matrix(winsorize.matrix(as.matrix(logcounts),trim=trim), sparse = sparse)
+  }
+  if (!is.null(cpm)){
+    assays[["cpm"]] <- Matrix(winsorize.matrix(as.matrix(cpm),trim=trim),sparse = sparse)
+  }
+  if (!is.null(tpm)){
+    assays[["tpm"]] <- Matrix(winsorize.matrix(as.matrix(tpm),trim=trim), sparse = sparse)
+  }
+  if (!is.null(scaleData)){
+    assays[["scaleData"]] <- Matrix(winsorize.matrix(as.matrix(scaleData),trim=trim), sparse = FALSE)
+  }
+  sce <- SingleCellExperiment(assays = assays, ...)
+  return(sce)
+}
+
 #' Filtering low expression
 #' 
 #' Filtering the genes expressed at least minexp in less than mincells.
 #' @importFrom SummarizedExperiment assay assays rowData
+#' @importFrom Matrix rowSums
 #' @import dplyr
 #' @param sce SingleCellExperiment object or a matrix.
 #' @param datatype Sepcify the data type in sce for filtering.
@@ -42,6 +91,7 @@ FilterLow = function(sce, datatype = NULL, minexp = 10, mincells = 5){
 #' @importFrom stats p.adjust
 #' @importFrom reticulate source_python
 #' @importFrom S4Vectors metadata
+#' @importFrom Matrix diff colSums t
 #' @import doParallel
 #' @import foreach
 #' @import dplyr
@@ -65,7 +115,7 @@ ADtest <- function(sce,
                    adj.method = "none",
                    thr.padj = 1e-3,
                    r.implement = FALSE,
-                   ncore = 2){
+                   ncore = 4){
   if (class(sce) != "SingleCellExperiment"){
       stop("sce must be a sce object")
   }
@@ -108,14 +158,12 @@ ADtest <- function(sce,
 
   if (!is.null(sample.cells)){
     set.seed(1)
-    cells.use <- do.call(c, lapply(useLevels, function(i) {sample(cells.use[lv == i], min(sum(lv == i), sample.cells))}))
+    cells.use <- unlist(lapply(useLevels, function(i) {sample(cells.use[lv == i], min(sum(lv == i), sample.cells))}))
     lv <- lv[cells.use]
   }
-  
-  vi <- apply(assay(sce[, cells.use], datatype), 1, function(x) sum(abs(diff(x))) >0 )
+  vi <- colSums(abs(diff(t(assay(sce[, cells.use], datatype))))) > 0 
   genes.use <- genes.use & vi
   message("Perform Aderson-Darling test for ", length(cells.use), " cells of <", paste(useLevels, collapse = " "),">")
-              
   if (ncore == 1){
     message("Use 1 core to perform Anderson-Darling test...")
     if (r.implement){
@@ -134,13 +182,13 @@ ADtest <- function(sce,
         stop("Python package scipy is not available.")
       }
     }
-  }               
+  }
   else{
     message("Use ", ncore ," cores to perform Anderson-Darling test...")
     cl = makeCluster(ncore)
     registerDoParallel(cl)
     if (r.implement) {
-      pv <- unlist(foreach(i = 1:sum(genes.use), .packages=c("kSamples", "SummarizedExperiment")) %dopar% {
+      pv <- unlist(foreach(i = 1:sum(genes.use), .packages=c("Matrix", "kSamples", "SummarizedExperiment")) %dopar% {
         ad.test(as.numeric(assay(sce[genes.use, cells.use][i, ], datatype)) ~ as.character(lv))$ad[1,3] # p-value of asymptotic method
       })
       
@@ -149,9 +197,9 @@ ADtest <- function(sce,
         message("*Use python implement of anderson_ksamp*")
         idx <- 1:sum(genes.use)
         block <- as.numeric(cut(idx, breaks = ncore))
-        pv <- unlist(foreach(i = 1:ncore, .packages=c("reticulate", "SummarizedExperiment"), .combine=c) %dopar% {
+        pv <- unlist(foreach(i = 1:ncore, .packages=c("Matrix", "reticulate", "SummarizedExperiment"), .combine=c) %dopar% {
           source_python(system.file("py_script", "adtest.py", package = "SOT"))
-          py_adtest(assay(sce[genes.use, cells.use][block == i, ], datatype), as.character(lv))
+          py_adtest(as.matrix(assay(sce[genes.use, cells.use][block == i, ], datatype)), as.character(lv)) # Sparse matrix is not available here
         })
       }else{
         stop("Python package scipy is not available.")
@@ -162,10 +210,8 @@ ADtest <- function(sce,
   adtest.padj <- rep(NA, nrow(sce))
   names(adtest.padj) <- rownames(sce)
   adtest.padj[rownames(sce[genes.use, ])] <- p.adjust(pv, method = adj.method)
-    
-  rowData(sce)$`adtest.padj` <- adtest.padj
-  metadata(sce)$`AD test condistions` <- useLevels
 
+  metadata(sce)$`AD test condistions` <- useLevels
   adtest.padj <- adtest.padj[!is.na(adtest.padj)]
   sig.genes <- adtest.padj[adtest.padj <= thr.padj]
   ad.mask <- rownames(sce) %in% names(sig.genes)

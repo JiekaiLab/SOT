@@ -1,5 +1,5 @@
 Package: SOT
-Version: 0.1.2
+Version: 0.1.3
 Title: Single-cell Orientation Tracing
 Description: Single-cell Orientation Tracing
 Authors@R: person("Lin", "Lihui", email = "lin_lihui@gibh.ac.cn", role = c("aut", "cre"))
@@ -8,6 +8,6 @@ Encoding: UTF-8
 LazyData: true
 ByteCompile: true
 RoxygenNote: 6.1.0
-Imports:apcluster,doParallel,dlm,dplyr,FNN,foreach,fastcluster,ggplot2,ggpubr,graphics,grDevices,igraph,kSamples,Matrix,parallel,pheatmap,RColorBrewer,reticulate,S4Vectors,scran,SingleCellExperiment,SummarizedExperiment,stats,utils
+Imports:apcluster,doParallel,dlm,dplyr,FNN,foreach,fastcluster,ggplot2,ggpubr,graphics,grDevices,igraph,kSamples,Matrix,parallel,pheatmap,RColorBrewer,reticulate,S4Vectors,scde,scran,SingleCellExperiment,SummarizedExperiment,stats,utils,qlcMatrix,irlba
 Suggests:knitr,rmarkdown,Rtsne,destiny,tidyr,DT
 VignetteBuilder:knitr

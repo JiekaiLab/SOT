@@ -157,7 +157,6 @@ gene_smooth <- function(mat, bincells = 1, normalize = TRUE, ncore = 1){
   dimnames(sm) <- dname
   
   return(as.data.frame(sm))
-  
 }
 
 #' Compare gene expression

@@ -5,20 +5,16 @@
 \title{Reduce redundant clusters of AP clustering}
 \usage{
 reduce.cluster(sce, datatype = "logcounts", genes.use = "genes.use",
-  projections = "l2", method = "pearson", dsim = NULL,
-  trim = 5.1/ncol(sce), center = TRUE, scale. = TRUE,
-  normalize.score = TRUE, ncore = 4, ...)
+  projections = "l2", method = "pearson", sim = NULL,
+  center = TRUE, scale. = TRUE, normalize.score = TRUE, ncore = 2,
+  ...)
 }
 \arguments{
 \item{sce}{A SingleCellExperiment object.}
 
 \item{datatype}{Sepcify the data type in sce for filtering.}
 
-\item{method}{Distance metric.}
-
-\item{dsim}{Prior defined distance matrix - default is NULL.}
-
-\item{trim}{Trim the largest and lowest values of each gene to avoid outlier effect.}
+\item{method}{The method to calculate the affinity matrix, can be pearson (Defult) or cosine.}
 
 \item{center}{Center the expression before performing PCA - default is FALSE.}
 
@@ -29,6 +25,8 @@ reduce.cluster(sce, datatype = "logcounts", genes.use = "genes.use",
 \item{ncore}{Number of cores used for parallel.}
 
 \item{...}{Additional arguments passed on to \code{\link[apcluster]{apcluster}}}
+
+\item{dsim}{Prior defined similarty matrix of lv1.score for clustering - default is NULL.}
 }
 \value{
 \itemize{

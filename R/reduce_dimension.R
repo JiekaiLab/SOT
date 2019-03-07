@@ -358,20 +358,6 @@ plot_embed <- function(sce,
   
 }
 
-dlm_helper <- function(g){
-  t <- as.ts(as.numeric(g), start = 1, end = length(g))
-  nileBuild <- function(par) {
-    dlmModPoly(1, dV = exp(par[1]), dW = exp(par[2]))
-  }
-  nileMLE <- dlmMLE(t, rep(0,2), nileBuild)
-  nileMod <- nileBuild(nileMLE$par)
-  nileFilt <- dlmFilter(t, nileMod)
-  nileSmooth <- dlmSmooth(nileFilt)
-  
-  return(nileSmooth$s[-1])
-  
-}
-
 #' Uniform Manifold Approximation and Projection (UMAP).
 #' 
 #' Dimension reduction technique that can be used for visualisation similarly to t-SNE, but also for general non-linear dimension reduction.

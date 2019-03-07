@@ -5,15 +5,17 @@
 #' @importFrom stats cor prcomp
 #' @importFrom parallel makeCluster stopCluster
 #' @importFrom S4Vectors metadata
+#' @importFrom Matrix Matrix spMatrix colMeans t
+#' @importFrom qlcMatrix corSparse cosSparse
+#' @importFrom irlba prcomp_irlba
 #' @import doParallel
 #' @import foreach
 #' @param sce A SingleCellExperiment object or matrix.
 #' @param datatype Specify the data type in sce for filtering.
 #' @param genes.use Specify the genes to perform clustering.
 #' @param projections Whether to calculate reconstructions and scores using the L1 norm ("l1") the L2 norm ("l2").
-#' @param dsim Prior defined distance matrix - default is NULL.
-#' @param trim Trim the largest and lowest values of each gene to avoid outlier effect.
-#' @param method The method to calculate the affinity matrix.
+#' @param sim Prior defined similarty matrix of genes for clustering - default is NULL.
+#' @param method The method to calculate the affinity matrix, can be pearson (Defult) or cosine.
 #' @param center Center the expression before performing PCA - default is FALSE.
 #' @param scale. Scale the expression before performing PCA - default is FALSE.
 #' @param normalize.score Wheter to normalize the pc1 score.
@@ -31,14 +33,13 @@ ap.cluster <- function(sce,
                        datatype = "logcounts",
                        genes.use = "genes.use",
                        projections = "l2",
-                       dsim = NULL,
-                       trim = 5.1/ncol(sce),
+                       sim = NULL,
                        method = "pearson",
                        center = TRUE, 
                        scale. = TRUE,
                        normalize.score = FALSE,
-                       minsize = 0,
-                       ncore = 4,
+                       minsize = 2,
+                       ncore = 2,
                        ...){
   # AP clustering genes and calculate the PCA pattern
   if (class(sce) != "SingleCellExperiment"){
@@ -58,28 +59,23 @@ ap.cluster <- function(sce,
   }else{
     genes.use <- rep(TRUE, nrow(sce))
   }
-  
-  mat = as.matrix(assay(sce[genes.use, ], datatype))
-  if (trim > 0){
-    mat <- scde::winsorize.matrix(mat, trim = trim) # Remove outliers with heighest and lowest expression
-    vi <- apply(mat, 1, function(x) sum(abs(diff(x))) >0 )
-    mat <- mat[vi, ]
-  }
-  if (center | scale.){
-    mat <- t(scale(t(mat), center = center, scale = scale.))
-  }
-  if (!is.null(dsim)){
-    dsim <- as.matrix(dsim)
+  mat <- assay(sce[genes.use, ], datatype)
+  if (is.null(sim)){
+    if (method == "pearson"){
+      sim <- as.matrix(corSparse(t(mat)))
+    }
+    else if (method == "cosine"){
+      sim <- as.matrix(cosSparse(t(mat)))
+    }
   }else{
-    dsim <- 1-cor(t(mat),method = method)
+    sim <- as.matrix(sim)
   }
   if (!"symbol" %in% colnames(rowData(sce))){
     rowData(sce) <- cbind(data.frame(symbol=rownames(sce)), as.data.frame(rowData(sce)))
   }
-  
-  dimnames(dsim) <- list(rownames(mat), rownames(mat))
+  dimnames(sim) <- list(rownames(mat), rownames(mat))
   message("Perform AP clustering on ", nrow(mat), " genes...")
-  apres <- apcluster(-dsim, ...)
+  apres <- suppressWarnings(apcluster(sim, ...))
   labels <- lapply(apres@clusters, function(cl) data.frame(symbol = names(cl)))
   gene_num = sapply(labels,nrow)
   idx <- rep(1:length(labels), gene_num)
@@ -95,14 +91,13 @@ ap.cluster <- function(sce,
   if (projections == "l2"){
     if (ncore == 1){
       message("Calculate eigengenes...")
-      pc1s <- do.call(cbind, lapply(cls, function(cl) prcomp(t(as.matrix(mat[as.character(cl$symbol),])), center = FALSE, scale. = FALSE)$x[,1]))
-      # objfun <- sapply(pca, function(cl) cl$sdev[1]^2)
+      pc1s <- do.call(cbind, lapply(cls, function(cl) prcomp_irlba(t(mat[as.character(cl$symbol),]), n=1, center = center, scale. = scale.)$x[,1]))
     }else{
       message("Calculate eigengenes using ", ncore, " cores...")
       cl <- makeCluster(ncore)
       registerDoParallel(cl)
-      pc1s <- foreach(i = 1:length(cls), .packages=c("stats"), .combine=cbind) %dopar% {
-        prcomp(t(as.matrix(mat[as.character(cls[[i]]$symbol),])), center = FALSE, scale. = FALSE)$x[,1]
+      pc1s <- foreach(i = 1:length(cls), .packages=c("irlba"), .combine=cbind) %dopar% {
+        prcomp_irlba(t(mat[as.character(cls[[i]]$symbol),]), n=1, center = center, scale. = scale.)$x[,1]
       }
       stopCluster(cl)
     }
@@ -116,18 +111,17 @@ ap.cluster <- function(sce,
     }
     if (ncore == 1){
       message("Perform wPCA and calculate eigengenes...")
-      pc1s <- do.call(cbind, lapply(cls, function(cl) as.vector(pcaL1::wl1pca(t(as.matrix(mat[as.character(cl$symbol),])), projDim=1, center=FALSE, projections=projections)$scores)))
+      pc1s <- do.call(cbind, lapply(cls, function(cl) as.vector(pcaL1::wl1pca(t(as.matrix(mat[as.character(cl$symbol),])), projDim=1, center=center, projections=projections)$scores)))
     }
     else{
       message("Perform wPCA using ", ncore, " cores...")
       cl <- makeCluster(ncore)
       registerDoParallel(cl)
       pc1s <- foreach(i = 1:length(cls), .packages=c("pcaL1"), .combine=cbind) %dopar% {
-        as.vector(pcaL1::wl1pca(t(as.matrix(mat[as.character(cls[[i]]$symbol),])), projDim=1, center=FALSE, projections=projections)$scores)
+        as.vector(wl1pca(t(as.matrix(mat[as.character(cls[[i]]$symbol),])), projDim=1, center=center, projections=projections)$scores)
       }
       stopCluster(cl)
     }
-    # objfun <- sapply(pca, function(cl) cl$L1error)
   }else{
     stop("projections should be l1 or l2")
   }
@@ -145,10 +139,9 @@ ap.cluster <- function(sce,
   
   # Plot cluster size
   df <- ap_stats
-  # df <- ap_stats[order(ap_stats$cluster_size),]
   df$color <- as.factor(rep(c(1,2),(nrow(df)+1)/2)[1:nrow(df)])
   p <- ggplot(data=df, aes(x=factor(cluster_gene, levels = df$cluster_gene), y=cluster_size, fill=color)) +
-        geom_bar(stat="identity",width = 0.8) + scale_fill_manual(values=c("#a3c4dc","#0e668b"))+
+        geom_bar(stat="identity",width = 0.8) + scale_fill_manual(values=c("#3DB9BF","#E87167"))+
         labs(title = "Cluster size", x = "Cluster exemplars", y = "Gene number") +
         theme_bw() + theme(axis.text.x = element_text(angle = 60, hjust = 1, size=6), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position="none") 
   metadata(sce)$p.cluster.size <- p
@@ -174,13 +167,15 @@ ap.cluster <- function(sce,
 #' @importFrom stats cor prcomp
 #' @importFrom parallel makeCluster stopCluster
 #' @importFrom S4Vectors metadata
+#' @importFrom qlcMatrix corSparse cosSparse
+#' @importFrom Matrix Matrix spMatrix colMeans t
+#' @importFrom irlba prcomp_irlba
 #' @import doParallel
 #' @import foreach
 #' @param sce A SingleCellExperiment object.
 #' @param datatype Sepcify the data type in sce for filtering.
-#' @param method Distance metric.
-#' @param dsim Prior defined distance matrix - default is NULL.
-#' @param trim Trim the largest and lowest values of each gene to avoid outlier effect.
+#' @param method The method to calculate the affinity matrix, can be pearson (Defult) or cosine.
+#' @param dsim Prior defined similarty matrix of lv1.score for clustering - default is NULL.
 #' @param center Center the expression before performing PCA - default is FALSE.
 #' @param scale. Scale the expression before performing PCA - default is FALSE.
 #' @param normalize.score Whether to normalize pc1 score.
@@ -198,12 +193,11 @@ reduce.cluster <- function(sce,
                            genes.use = "genes.use",
                            projections = "l2",
                            method = "pearson",
-                           dsim = NULL,
-                           trim = 5.1/ncol(sce),
+                           sim = NULL,
                            center = TRUE, 
                            scale. = TRUE,
                            normalize.score = TRUE,
-                           ncore = 4,
+                           ncore = 2,
                            ...){
 
   if (class(sce) != "SingleCellExperiment"){
@@ -224,34 +218,27 @@ reduce.cluster <- function(sce,
     genes.use <- rep(TRUE, nrow(sce))
   }
   
-  mat = as.matrix(assay(sce[genes.use, ], datatype))
-  if (trim > 0){
-    mat <- scde::winsorize.matrix(mat, trim = trim) # Remove outliers with heighest and lowest expression
-    vi <- apply(mat, 1, function(x) sum(abs(diff(x))) >0 )
-    mat <- mat[vi, ]
-  }
-  if (center | scale.){
-    mat <- t(scale(t(mat), center = center, scale = scale.))
-  }
+  mat = assay(sce[genes.use, ], datatype)
   if (!"symbol" %in% colnames(rowData(sce))){
     rowData(sce) <- cbind(data.frame(symbol=rownames(sce)), as.data.frame(rowData(sce)))
   }
-
   gc <- rowData(sce)[,c("symbol","lv1.labels","lv1.exemplars")]
   gc <- gc[complete.cases(gc), ]
   ap_stats <- metadata(sce)$ap.stats
   y <- reducedDim(sce,"lv1.score")
-  
-  if (is.null(dsim)){
-    if(method == "sqrtcor"){
-      dsim <- sqrt(2*(1 - cor(y)))
+  if (is.null(sim)){
+    if (method == "pearson"){
+      sim <- as.matrix(corSparse(y))
     }
-    else {
-      dsim <- 1 - cor(y, method = method)
+    else if (method == "cosine"){
+      sim <- as.matrix(cosSparse(y))
     }
+  }else{
+    sim <- as.matrix(sim)
   }
+  dimnames(sim) <- list(colnames(y), colnames(y))
   message("Perform AP clustering on ", ncol(y), " clusters...")
-  apres <- apcluster(-dsim, ...)
+  apres <- suppressWarnings(apcluster(sim, ...))
   r2 <- lapply(apres@clusters, function(cl) data.frame(cluster = names(cl)))
 
   idx <- rep(1:length(r2), sapply(r2,nrow))
@@ -273,13 +260,13 @@ reduce.cluster <- function(sce,
   if (projections == "l2"){
     if (ncore == 1){
       message("Calculate eigengenes...")
-      pc1s <- do.call(cbind, lapply(grl, function(gr) prcomp(t(as.matrix(mat[as.character(gr$symbol),])), center = FALSE, scale. = FALSE)$x[,1]))
+      pc1s <- do.call(cbind, lapply(grl, function(gr) prcomp_irlba(t(mat[as.character(gr$symbol),]), n = 1, center = center, scale. = scale.)$x[,1]))
     }else{
       message("Calculate eigengenes using ", ncore, " cores...")
       cl <- makeCluster(ncore)
       registerDoParallel(cl)
-      pc1s <- foreach(i = 1:length(grl), .packages=c("stats"), .combine=cbind) %dopar% {
-        prcomp(t(as.matrix(mat[as.character(grl[[i]]$symbol),])), center = FALSE, scale. = FALSE)$x[,1]
+      pc1s <- foreach(i = 1:length(grl), .packages=c("irlba"), .combine=cbind) %dopar% {
+        prcomp_irlba(t(mat[as.character(grl[[i]]$symbol),]), n = 1, center = center, scale. = scale.)$x[,1]
       }
       stopCluster(cl)
     }
@@ -301,7 +288,7 @@ reduce.cluster <- function(sce,
       cl <- makeCluster(ncore)
       registerDoParallel(cl)
       pc1s <- foreach(i = 1:length(grl), .packages=c("pcaL1"), .combine=cbind) %dopar% {
-        as.vector(pcaL1::wl1pca(t(as.matrix(amat[as.character(grl[[i]]$symbol),])), projDim=1, center=FALSE, projections=projections)$scores)
+        as.vector(wl1pca(t(as.matrix(amat[as.character(grl[[i]]$symbol),])), projDim=1, center=FALSE, projections=projections)$scores)
       }
       stopCluster(cl)
     }
@@ -324,7 +311,7 @@ reduce.cluster <- function(sce,
   df$color <- as.factor(rep(c(1,2),(nrow(df)+1)/2)[1:nrow(df)])
   p <- ggplot(data=df, 
               aes(x=factor(group, levels = df$group), y=group_size, fill=color)) +
-    geom_bar(stat="identity",width = 0.8) + scale_fill_manual(values=c("#a3c4dc","#0e668b"))+
+    geom_bar(stat="identity",width = 0.8) + scale_fill_manual(values=c("#3DB9BF","#E87167"))+
     labs(title = "Group size", x = "Group", y = "Gene number") +
     theme_bw() + theme(axis.text.x = element_text(size = 10), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position="none") 
   metadata(sce)$p.group.size <- p

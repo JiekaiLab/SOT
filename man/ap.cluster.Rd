@@ -5,9 +5,9 @@
 \title{Affinity propagation clustering}
 \usage{
 ap.cluster(sce, datatype = "logcounts", genes.use = "genes.use",
-  projections = "l2", dsim = NULL, trim = 5.1/ncol(sce),
-  method = "pearson", center = TRUE, scale. = TRUE,
-  normalize.score = FALSE, minsize = 0, ncore = 4, ...)
+  projections = "l2", sim = NULL, method = "pearson",
+  center = TRUE, scale. = TRUE, normalize.score = FALSE,
+  minsize = 2, ncore = 2, ...)
 }
 \arguments{
 \item{sce}{A SingleCellExperiment object or matrix.}
@@ -18,11 +18,9 @@ ap.cluster(sce, datatype = "logcounts", genes.use = "genes.use",
 
 \item{projections}{Whether to calculate reconstructions and scores using the L1 norm ("l1") the L2 norm ("l2").}
 
-\item{dsim}{Prior defined distance matrix - default is NULL.}
+\item{sim}{Prior defined similarty matrix of genes for clustering - default is NULL.}
 
-\item{trim}{Trim the largest and lowest values of each gene to avoid outlier effect.}
-
-\item{method}{The method to calculate the affinity matrix.}
+\item{method}{The method to calculate the affinity matrix, can be pearson (Defult) or cosine.}
 
 \item{center}{Center the expression before performing PCA - default is FALSE.}
 

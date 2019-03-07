@@ -6,7 +6,7 @@
 \usage{
 ADtest(sce, datatype = "logcounts", condition, useLevels = NULL,
   genes.use = "find.hvgs", sample.cells = 1000, adj.method = "none",
-  thr.padj = 0.001, r.implement = FALSE, ncore = 2)
+  thr.padj = 0.001, r.implement = FALSE, ncore = 4)
 }
 \arguments{
 \item{sce}{SingleCellExperiment object.}
