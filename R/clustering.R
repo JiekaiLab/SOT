@@ -157,6 +157,7 @@ ap.cluster <- function(sce,
   }
   metadata(sce)$lv1.parameters <- c("projections"=projections, "method"=method)
   metadata(sce)$ap.stats <- ap_stats
+             ###
   return(sce)
 }
 
