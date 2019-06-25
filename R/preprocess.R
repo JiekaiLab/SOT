@@ -132,7 +132,7 @@ ADtest <- function(sce,
   }
   if (!is.null(useLevels)){
     if (!all(useLevels %in% cond)){
-      stop("useLevels must be in ", paste(unique(cond), sep = " ", collapse = T))
+      stop("useLevels must be in ", paste(unique(cond), collapse = " "))
     }
   }
   else{
