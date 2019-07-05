@@ -64,7 +64,7 @@ FilterLow = function(sce, datatype = NULL, minexp = 10, mincells = 5){
   }
   if (!is.null(datatype)){
     if (!datatype %in% names(assays(sce))){
-      stop("Available datatype are", names(assays(sce)))
+      stop("Available datatype are ", paste0(names(assays(sce)), collapse=" "))
     }
   }
   data = assay(sce, datatype)
@@ -300,6 +300,7 @@ FindHVGs <- function(sce,
     hvg <- hvg[hvg$mean < thr.high,]
   }
   if (show.plot){
+    plot.new()
     plot(var.out$mean, var.out$total, pch=16, cex=0.6, xlab="Mean log-expression", 
          ylab="Variance of log-expression", main = "Fit a variance trend")
     curve(var.fit$trend(x), col="dodgerblue", lwd=2, add=TRUE)
