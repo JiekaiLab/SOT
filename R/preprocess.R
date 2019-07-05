@@ -121,7 +121,7 @@ ADtest <- function(sce,
   }
   if (!is.null(datatype)){
     if (!datatype %in% names(assays(sce))){
-      stop("Available datatype are", names(assays(sce)))
+      stop("Available datatype are", paste0(names(assays(sce)), collapse=" "))
     }
   }
   if (!condition %in% colnames(colData(sce))){
@@ -263,7 +263,7 @@ FindHVGs <- function(sce,
   }
   if (!is.null(datatype)){
     if (!datatype %in% names(assays(sce))){
-      stop("Available datatype are", names(assays(sce)))
+      stop("Available datatype are", paste0(names(assays(sce)), collapse=" "))
     }
   }
   if (!is.null(genes.use)){
