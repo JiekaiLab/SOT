@@ -95,7 +95,7 @@ ap.cluster <- function(sce,
     }else{
       message("Calculate eigengenes using ", ncore, " cores...")
       cl <- makeCluster(ncore)
-      registerDoParallel(cl)
+      registerDoParallel(cl, nocompile=FALSE)
       pc1s <- foreach(i = 1:length(cls), .packages=c("irlba"), .combine=cbind) %dopar% {
         prcomp_irlba(t(mat[as.character(cls[[i]]$symbol),]), n=1, center = center, scale. = scale.)$x[,1]
       }
@@ -264,7 +264,7 @@ reduce.cluster <- function(sce,
     }else{
       message("Calculate eigengenes using ", ncore, " cores...")
       cl <- makeCluster(ncore)
-      registerDoParallel(cl)
+      registerDoParallel(cl, nocompile=FALSE)
       pc1s <- foreach(i = 1:length(grl), .packages=c("irlba"), .combine=cbind) %dopar% {
         prcomp_irlba(t(mat[as.character(grl[[i]]$symbol),]), n = 1, center = center, scale. = scale.)$x[,1]
       }
