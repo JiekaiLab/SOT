@@ -7,7 +7,7 @@ License: MIT
 Encoding: UTF-8
 LazyData: true
 ByteCompile: true
-RoxygenNote: 6.1.0
-Imports:apcluster,doParallel,dlm,dplyr,FNN,foreach,fastcluster,ggplot2,ggpubr,graphics,grDevices,igraph,kSamples,Matrix,parallel,pheatmap,RColorBrewer,reticulate,S4Vectors,scde,scran,SingleCellExperiment,SummarizedExperiment,stats,utils,qlcMatrix,irlba
-Suggests:knitr,rmarkdown,Rtsne,destiny,tidyr,DT
-VignetteBuilder:knitr
+RoxygenNote: 7.0.2
+Imports: apcluster,doParallel,dlm,dplyr,FNN,foreach,fastcluster,ggplot2,ggpubr,graphics,grDevices,igraph,kSamples,Matrix,parallel,pheatmap,RColorBrewer,reticulate,S4Vectors,scde,scran,SingleCellExperiment,SummarizedExperiment,stats,utils,qlcMatrix,irlba
+Suggests: knitr,rmarkdown,Rtsne,destiny,tidyr,DT
+VignetteBuilder: knitr
