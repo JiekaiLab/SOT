@@ -4,15 +4,40 @@
 \alias{layout_2d}
 \title{Force-directed layout}
 \usage{
-layout_2d(sce, usedEmbed = "PCA", usedDims = NULL, datatype = NULL,
-  filename = NULL, k = 35, n_trees = 50, max_iter = 2, seed = 1,
-  layout_method = "FR", grid = "auto", iterations = 1000,
-  repel = 2, plotstep = 0, clus_method = NULL, shape = NULL,
-  colour_condition = NULL, colour_gene = NULL, colour_embed = NULL,
-  color_scale = NULL, cmap = NULL, compute_layout = TRUE,
-  orderExp = FALSE, title = NULL, ncol = NULL, nrow = NULL,
-  alpha = 0.9, size = 1, width = 4, height = 3,
-  rmelements = NULL, ...)
+layout_2d(
+  sce,
+  usedEmbed = "PCA",
+  usedDims = NULL,
+  datatype = NULL,
+  filename = NULL,
+  k = 35,
+  n_trees = 50,
+  max_iter = 2,
+  seed = 1,
+  layout_method = "FR",
+  grid = "auto",
+  iterations = 1000,
+  repel = 2,
+  plotstep = 0,
+  clus_method = NULL,
+  shape = NULL,
+  colour_condition = NULL,
+  colour_gene = NULL,
+  colour_embed = NULL,
+  color_scale = NULL,
+  cmap = NULL,
+  compute_layout = TRUE,
+  orderExp = FALSE,
+  title = NULL,
+  ncol = NULL,
+  nrow = NULL,
+  alpha = 0.9,
+  size = 1,
+  width = 4,
+  height = 3,
+  rmelements = NULL,
+  ...
+)
 }
 \arguments{
 \item{sce}{A SingleCellExperiment object.}

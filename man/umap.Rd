@@ -4,9 +4,18 @@
 \alias{umap}
 \title{Uniform Manifold Approximation and Projection (UMAP).}
 \usage{
-umap(mat, umap.args = list(), n_neighbors = 20, n_components = 2,
-  metric = "euclidean", negative_sample_rate = 5, init = "spectral",
-  min_dist = 0.3, random_state = 1, verbose = FALSE)
+umap(
+  mat,
+  umap.args = list(),
+  n_neighbors = 20,
+  n_components = 2,
+  metric = "euclidean",
+  negative_sample_rate = 5,
+  init = "spectral",
+  min_dist = 0.3,
+  random_state = 1,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{mat}{Data with rows are samples and cols are genes.}

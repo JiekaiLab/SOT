@@ -4,9 +4,20 @@
 \alias{compare_expr}
 \title{Compare gene expression}
 \usage{
-compare_expr(sce, genes, trunk = NULL, branch = NULL, color = NULL,
-  linestyle = NULL, datatype = "logcounts", stateid = "branch",
-  trajectory = "trajectory", lw = 2, span = 0.6, ...)
+compare_expr(
+  sce,
+  genes,
+  trunk = NULL,
+  branch = NULL,
+  color = NULL,
+  linestyle = NULL,
+  datatype = "logcounts",
+  stateid = "branch",
+  trajectory = "trajectory",
+  lw = 2,
+  span = 0.6,
+  ...
+)
 }
 \arguments{
 \item{sce}{Expression matrix.}

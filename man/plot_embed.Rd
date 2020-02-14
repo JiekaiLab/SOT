@@ -4,9 +4,20 @@
 \alias{plot_embed}
 \title{Heatmap of the reduced dimension data}
 \usage{
-plot_embed(sce, usedEmbed, k = 8, method = "complete", filename = NA,
-  cells.use = NULL, vars.use = NULL, anno_col = NULL,
-  color_scale = NULL, cmap = NULL, cluster_row = TRUE, ...)
+plot_embed(
+  sce,
+  usedEmbed,
+  k = 8,
+  method = "complete",
+  filename = NA,
+  cells.use = NULL,
+  vars.use = NULL,
+  anno_col = NULL,
+  color_scale = NULL,
+  cmap = NULL,
+  cluster_row = TRUE,
+  ...
+)
 }
 \arguments{
 \item{sce}{A SingleCellExperiment object.}

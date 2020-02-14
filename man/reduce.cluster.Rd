@@ -4,10 +4,19 @@
 \alias{reduce.cluster}
 \title{Reduce redundant clusters of AP clustering}
 \usage{
-reduce.cluster(sce, datatype = "logcounts", genes.use = "genes.use",
-  projections = "l2", method = "pearson", sim = NULL,
-  center = TRUE, scale. = TRUE, normalize.score = TRUE, ncore = 2,
-  ...)
+reduce.cluster(
+  sce,
+  datatype = "logcounts",
+  genes.use = "genes.use",
+  projections = "l2",
+  method = "pearson",
+  sim = NULL,
+  center = TRUE,
+  scale. = TRUE,
+  normalize.score = TRUE,
+  ncore = 2,
+  ...
+)
 }
 \arguments{
 \item{sce}{A SingleCellExperiment object.}

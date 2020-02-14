@@ -4,10 +4,21 @@
 \alias{wishbone}
 \title{Wishbone pseudotime}
 \usage{
-wishbone(sce, usedEmbed, start_cell, datatype = "scaledata",
-  usedDims = NULL, condition = NULL, usedLevels = NULL,
-  plot_genes = NULL, branch = TRUE, k = 35, num_waypoints = 150,
-  seed = 1, figsize = c(20, 10))
+wishbone(
+  sce,
+  usedEmbed,
+  start_cell,
+  datatype = "scaledata",
+  usedDims = NULL,
+  condition = NULL,
+  usedLevels = NULL,
+  plot_genes = NULL,
+  branch = TRUE,
+  k = 35,
+  num_waypoints = 150,
+  seed = 1,
+  figsize = c(20, 10)
+)
 }
 \arguments{
 \item{sce}{A SingleCellExperiment object or matrix.}

@@ -4,10 +4,20 @@
 \alias{ap.cluster}
 \title{Affinity propagation clustering}
 \usage{
-ap.cluster(sce, datatype = "logcounts", genes.use = "genes.use",
-  projections = "l2", sim = NULL, method = "pearson",
-  center = TRUE, scale. = TRUE, normalize.score = FALSE,
-  minsize = 2, ncore = 2, ...)
+ap.cluster(
+  sce,
+  datatype = "logcounts",
+  genes.use = "genes.use",
+  projections = "l2",
+  sim = NULL,
+  method = "pearson",
+  center = TRUE,
+  scale. = TRUE,
+  normalize.score = FALSE,
+  minsize = 2,
+  ncore = 2,
+  ...
+)
 }
 \arguments{
 \item{sce}{A SingleCellExperiment object or matrix.}

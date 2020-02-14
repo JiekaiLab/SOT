@@ -4,9 +4,19 @@
 \alias{FindHVGs}
 \title{Find high variable genes}
 \usage{
-FindHVGs(sce, datatype = "logcounts", genes.use = "filter.low",
-  thr.bio = 0, thr.tech = NULL, thr.p.value = NULL, thr.FDR = 0.1,
-  thr.low = 0, thr.high = 20, show.plot = TRUE, ...)
+FindHVGs(
+  sce,
+  datatype = "logcounts",
+  genes.use = "filter.low",
+  thr.bio = 0,
+  thr.tech = NULL,
+  thr.p.value = NULL,
+  thr.FDR = 0.1,
+  thr.low = 0,
+  thr.high = 20,
+  show.plot = TRUE,
+  ...
+)
 }
 \arguments{
 \item{sce}{SingleCellExperiment object.}

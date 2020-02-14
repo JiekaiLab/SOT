@@ -4,14 +4,32 @@
 \alias{cheatmap}
 \title{Heatmap for gene expression pattern.}
 \usage{
-cheatmap(mat, filename = NA, vmax = 2, vmin = -1, log = FALSE,
-  scale = FALSE, hlight = NULL, cmap = NULL, cluster_rows = TRUE,
-  cluster_cols = TRUE, gene_labels = NULL, cell_labels = NULL,
-  gene_order = NULL, cell_order = NULL, gaps_row = NULL,
-  gaps_col = NULL, anno_row = NULL, anno_col = NULL,
-  plot_gaps_row = TRUE, plot_gaps_col = TRUE,
-  re_write_gene_labels = FALSE, re_write_cell_labels = FALSE,
-  show_colnames = FALSE, ...)
+cheatmap(
+  mat,
+  filename = NA,
+  vmax = 2,
+  vmin = -1,
+  log = FALSE,
+  scale = FALSE,
+  hlight = NULL,
+  cmap = NULL,
+  cluster_rows = TRUE,
+  cluster_cols = TRUE,
+  gene_labels = NULL,
+  cell_labels = NULL,
+  gene_order = NULL,
+  cell_order = NULL,
+  gaps_row = NULL,
+  gaps_col = NULL,
+  anno_row = NULL,
+  anno_col = NULL,
+  plot_gaps_row = TRUE,
+  plot_gaps_col = TRUE,
+  re_write_gene_labels = FALSE,
+  re_write_cell_labels = FALSE,
+  show_colnames = FALSE,
+  ...
+)
 }
 \arguments{
 \item{mat}{Expression matrix, columns are cells and rows are genes.}

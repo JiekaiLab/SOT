@@ -4,9 +4,17 @@
 \alias{BuildSCE}
 \title{Build SingleCellExperiment object.}
 \usage{
-BuildSCE(counts = NULL, normcounts = NULL, logcounts = NULL,
-  cpm = NULL, tpm = NULL, scaleData = NULL, trim = 0.1,
-  sparse = TRUE, ...)
+BuildSCE(
+  counts = NULL,
+  normcounts = NULL,
+  logcounts = NULL,
+  cpm = NULL,
+  tpm = NULL,
+  scaleData = NULL,
+  trim = 0.1,
+  sparse = TRUE,
+  ...
+)
 }
 \arguments{
 \item{counts}{Matrix like or data.frame object of counts with genes by cells.}
