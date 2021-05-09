@@ -1,5 +1,5 @@
 Package: SOT
-Version: 0.1.3
+Version: 0.1.4
 Title: Single-cell Orientation Tracing
 Description: Single-cell Orientation Tracing
 Authors@R: person("Lin", "Lihui", email = "lin_lihui@gibh.ac.cn", role = c("aut", "cre"))
