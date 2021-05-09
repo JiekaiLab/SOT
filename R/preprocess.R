@@ -278,8 +278,8 @@ FindHVGs <- function(sce,
   if (!"symbol" %in% colnames(rowData(sce))){
     rowData(sce) <- cbind(data.frame(symbol=rownames(sce)), as.data.frame(rowData(sce)))
   }
-
-  hvg <- modelGeneVar(assay(sce[genes.use, ], datatype))
+  var.out <- modelGeneVar(assay(sce[genes.use, ], datatype))
+  hvg <- var.out
   if (!is.null(thr.bio)){
     hvg = hvg[hvg$bio > thr.bio,]
   }
