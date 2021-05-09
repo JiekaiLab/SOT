@@ -230,7 +230,7 @@ ADtest <- function(sce,
 #' 
 #' Fing high variable genes by fitting a mean-dependent trend to the gene-specific variances.
 #' @references \url{https://f1000research.com/articles/5-2122/v2}
-#' @importFrom scran modelGeneVar
+#' @importFrom scran modelGeneVar fitTrendVar
 #' @importFrom SummarizedExperiment assay rowData
 #' @importFrom graphics curve points
 #' @import dplyr
@@ -301,7 +301,7 @@ FindHVGs <- function(sce,
   if (show.plot){
     plot(var.out$mean, var.out$total, pch=16, cex=0.6, xlab="Mean log-expression", 
          ylab="Variance of log-expression", main = "Fit a variance trend")
-    curve(var.fit$trend(x), col="dodgerblue", lwd=2, add=TRUE)
+    curve(fitTrendVar(var.out$mean,var.out$tech)$trend(x), col="dodgerblue", lwd=2, add=TRUE)
     points(hvg$mean, hvg$total, col = "red", pch = 16, cex=0.6)
   }
   hvg.mask <- rownames(sce) %in% rownames(hvg)
