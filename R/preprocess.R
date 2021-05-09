@@ -230,7 +230,7 @@ ADtest <- function(sce,
 #' 
 #' Fing high variable genes by fitting a mean-dependent trend to the gene-specific variances.
 #' @references \url{https://f1000research.com/articles/5-2122/v2}
-#' @importFrom scran trendVar decomposeVar
+#' @importFrom scran modelGeneVar
 #' @importFrom SummarizedExperiment assay rowData
 #' @importFrom graphics curve points
 #' @import dplyr
@@ -244,7 +244,7 @@ ADtest <- function(sce,
 #' @param thr.low The low threshold of mean log-expression.
 #' @param thr.high The high threshold of mean log-expression.
 #' @param show.plot Whether to plot the fitting results.
-#' @param ... Additional arguments passed on to \code{\link[scran]{trendVar}}.
+#' @param ... Additional arguments passed on to \code{\link[scran]{modelGeneVar}}.
 #' @return SingleCellExperiment object with hvgs mask in rowData slot.
 #' @export
 FindHVGs <- function(sce, 
@@ -278,9 +278,8 @@ FindHVGs <- function(sce,
   if (!"symbol" %in% colnames(rowData(sce))){
     rowData(sce) <- cbind(data.frame(symbol=rownames(sce)), as.data.frame(rowData(sce)))
   }
-  var.fit <- trendVar(assay(sce[genes.use, ], datatype), ...) # loess.args=list(span=0.3), parametric=T
-  var.out <- decomposeVar(assay(sce[genes.use, ], datatype), var.fit)
-  hvg <- var.out
+
+  hvg <- modelGeneVar(assay(sce[genes.use, ], datatype))
   if (!is.null(thr.bio)){
     hvg = hvg[hvg$bio > thr.bio,]
   }
