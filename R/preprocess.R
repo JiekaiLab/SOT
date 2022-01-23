@@ -230,7 +230,7 @@ ADtest <- function(sce,
 #' 
 #' Fing high variable genes by fitting a mean-dependent trend to the gene-specific variances.
 #' @references \url{https://f1000research.com/articles/5-2122/v2}
-#' @importFrom scran trendVar decomposeVar
+#' @importFrom scran modelGeneVar
 #' @importFrom SummarizedExperiment assay rowData
 #' @importFrom graphics curve points
 #' @import dplyr
@@ -247,75 +247,77 @@ ADtest <- function(sce,
 #' @param ... Additional arguments passed on to \code{\link[scran]{trendVar}}.
 #' @return SingleCellExperiment object with hvgs mask in rowData slot.
 #' @export
-FindHVGs <- function(sce, 
-                     datatype = "logcounts", 
-                     genes.use = "filter.low", 
-                     thr.bio = 0,
-                     thr.tech = NULL,
-                     thr.p.value = NULL,
-                     thr.FDR = 0.1,
-                     thr.low = 0,
-                     thr.high = 20,
-                     show.plot = TRUE,
-                     ...){
-  if (class(sce) != "SingleCellExperiment"){
+FindHVGs <- function (sce, datatype = "logcounts", genes.use = "filter.low", 
+          thr.bio = 0.5, thr.tech = NULL, thr.p.value = NULL, thr.FDR = NULL, 
+          thr.low = 0, thr.high = 20, show.plot = TRUE, ...) {
+  if (class(sce) != "SingleCellExperiment") {
     stop("sce must be a sce object")
   }
-  if (!is.null(datatype)){
-    if (!datatype %in% names(assays(sce))){
+  if (!is.null(datatype)) {
+    if (!datatype %in% names(assays(sce))) {
       stop("Available datatype are", names(assays(sce)))
     }
   }
-  if (!is.null(genes.use)){
-    if (!genes.use %in% colnames(rowData(sce))){
+  if (!is.null(genes.use)) {
+    if (!genes.use %in% colnames(rowData(sce))) {
       stop("genes.use is not in rowData")
-    }else{
+    }
+    else {
       genes.use <- rowData(sce)[, genes.use]
     }
-  }else{
+  }
+  else {
     genes.use <- rep(TRUE, nrow(sce))
   }
-  if (!"symbol" %in% colnames(rowData(sce))){
-    rowData(sce) <- cbind(data.frame(symbol=rownames(sce)), as.data.frame(rowData(sce)))
+  if (!"symbol" %in% colnames(rowData(sce))) {
+    rowData(sce) <- cbind(data.frame(symbol = rownames(sce)), 
+                          as.data.frame(rowData(sce)))
   }
-  var.fit <- trendVar(assay(sce[genes.use, ], datatype), ...) # loess.args=list(span=0.3), parametric=T
-  var.out <- decomposeVar(assay(sce[genes.use, ], datatype), var.fit)
+
+  var.out <- modelGeneVar(sce, assay.type = datatype)
+  
   hvg <- var.out
-  if (!is.null(thr.bio)){
-    hvg = hvg[hvg$bio > thr.bio,]
+  if (!is.null(thr.bio)) {
+    hvg = hvg[hvg$bio > thr.bio, ]
   }
-  if (!is.null(thr.tech)){
-    hvg <- hvg[hvg$tech < thr.tech,]
+  if (!is.null(thr.tech)) {
+    hvg <- hvg[hvg$tech < thr.tech, ]
   }
-  if (!is.null(thr.p.value)){
-    hvg <- hvg[hvg$p.value < thr.p.value,]
+  if (!is.null(thr.p.value)) {
+    hvg <- hvg[hvg$p.value < thr.p.value, ]
   }
-  if (!is.null(thr.FDR)){
-    hvg <- hvg[hvg$FDR < thr.FDR,]
+  if (!is.null(thr.FDR)) {
+    hvg <- hvg[hvg$FDR < thr.FDR, ]
   }
-  if (!is.null(thr.low)){
-    hvg <- hvg[hvg$mean > thr.low,]
+  if (!is.null(thr.low)) {
+    hvg <- hvg[hvg$mean > thr.low, ]
   }
-  if (!is.null(thr.high)){
-    hvg <- hvg[hvg$mean < thr.high,]
+  if (!is.null(thr.high)) {
+    hvg <- hvg[hvg$mean < thr.high, ]
   }
-  if (show.plot){
-    plot(var.out$mean, var.out$total, pch=16, cex=0.6, xlab="Mean log-expression", 
-         ylab="Variance of log-expression", main = "Fit a variance trend")
-    curve(var.fit$trend(x), col="dodgerblue", lwd=2, add=TRUE)
-    points(hvg$mean, hvg$total, col = "red", pch = 16, cex=0.6)
+  if (show.plot) {
+    plot(var.out$mean, var.out$total, pch = 16, cex = 0.6, 
+         xlab = "Mean log-expression", ylab = "Variance of log-expression", 
+         main = "Fit a variance trend")
+    curve(metadata(var.out)$trend(x), col = "dodgerblue", lwd = 2, 
+          add = TRUE)
+    points(hvg$mean, hvg$total, col = "red", pch = 16, 
+           cex = 0.6)
   }
   hvg.mask <- rownames(sce) %in% rownames(hvg)
   rowData(sce)[, "find.hvgs"] <- hvg.mask
-  if ("genes.use" %in% colnames(rowData(sce))){
-    rowData(sce)[, "genes.use"] <- rowData(sce)[, "genes.use"] & hvg.mask
-  }else{
+  if ("genes.use" %in% colnames(rowData(sce))) {
+    rowData(sce)[, "genes.use"] <- rowData(sce)[, "genes.use"] & 
+      hvg.mask
+  }
+  else {
     rowData(sce)[, "genes.use"] <- hvg.mask
   }
-  fit.df <- data.frame(matrix(rep(NA, ncol(var.out)*nrow(sce)),ncol = ncol(var.out)),row.names = rownames(sce))
+  fit.df <- data.frame(matrix(rep(NA, ncol(var.out) * nrow(sce)), 
+                              ncol = ncol(var.out)), row.names = rownames(sce))
   colnames(fit.df) <- colnames(var.out)
   fit.df[rownames(var.out), ] <- as.data.frame(var.out)
-  # rowData(sce) <- cbind(rowData(sce), fit.df[rownames(sce), ])
-  rowData(sce) <- as.data.frame(rowData(sce)) %>% select(-genes.use, genes.use)
+  rowData(sce) <- as.data.frame(rowData(sce)) %>% select(-genes.use, 
+                                                         genes.use)
   return(sce)
 }
